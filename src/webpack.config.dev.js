@@ -5,7 +5,7 @@ const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 // const MinicssExtractPluin = require('mini-css-extract-plugin');
 const autoprefixer = require('autoprefixer');
-const pxtorem = require('postcss-pxtorem');
+// const pxtorem = require('postcss-pxtorem');
 const util = require('./webpack.util');
 
 const app = JSON.parse(fs.readFileSync(path.join(__dirname, '/.app.conf')));
@@ -56,15 +56,15 @@ module.exports = {
                         'not ie < 9', // React doesn't support IE8 anyway
                       ],
                     }),
-                    pxtorem({
-                      rootValue: 10,
-                      unitPrecision: 5,
-                      propList: ['*'],
-                      selectorBlackList: [],
-                      replace: true,
-                      mediaQuery: false,
-                      minPixelValue: 12,
-                    }),
+                    // pxtorem({
+                    //   rootValue: 10,
+                    //   unitPrecision: 5,
+                    //   propList: ['*'],
+                    //   selectorBlackList: [],
+                    //   replace: true,
+                    //   mediaQuery: false,
+                    //   minPixelValue: 12,
+                    // }),
                   ],
                 },
               },
