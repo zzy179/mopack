@@ -146,8 +146,8 @@ function createPages(pages, pagespath) {
     const pagePath = path.join(pagespath, `/${page}`);
     fs.ensureDirSync(pagePath);
     fs.ensureDirSync(`${pagePath}/components`);
-    nfs.writeFileSync(`${pagePath}/index.js`, createCommentTemplate('javascript'));
-    nfs.writeFileSync(`${pagePath}/index.css`, createCommentTemplate('style'));
+    nfs.writeFileSync(`${pagePath}/main.js`, createCommentTemplate('javascript'));
+    nfs.writeFileSync(`${pagePath}/main.css`, createCommentTemplate('style'));
     nfs.writeFileSync(`${pagePath}/${page}.html`, createHtmlTemplate(page));
   });
 }

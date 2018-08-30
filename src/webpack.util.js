@@ -13,7 +13,7 @@ function createHtmlPlugins(entry, Plugin) {
 function createEntry(entry) {
   const Entry = {};
   entry.forEach((page) => {
-    Entry[page] = [`${entryPathFix + page}/index.js`, '@babel/polyfill'];
+    Entry[page] = [`${entryPathFix + page}/main.js`, '@babel/polyfill'];
   });
   return Entry;
 }
