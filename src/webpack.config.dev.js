@@ -80,7 +80,7 @@ module.exports = {
                 options: {
                   cacheDirectory: true,
                   babelrc: false,
-                  presets: ['env', 'react'],
+                  presets: ['@babel/env', '@babel/react'],
                 },
               },
             ],
