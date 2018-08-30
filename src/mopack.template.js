@@ -9,7 +9,9 @@ function createHtmlTemplate(title) {
   </head>
   <body>
 
-    <div id="react-root"></div>
+    <div id="react-root">
+       <h1>Hello World!</h1>
+    </div>
 
   </body>
 </html>
@@ -19,7 +21,7 @@ function createHtmlTemplate(title) {
 
 function createCommentTemplate(type) {
   return `/* this is the ${type} entry point for this page */
-${type === 'javascript' ? "import './index.css'" : ''}
+${type === 'javascript' ? "import './main.css'" : ''}
   `;
 }
 
