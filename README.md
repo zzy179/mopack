@@ -22,13 +22,12 @@
 `mopack <projectname>` ,其中 `projectname` 表示项目名称，然后mopack将在您的当前目录下生成项目。
 您可以通过命令 `mopack -h` 查看帮助。
 
-mopcak 也支持配置文件
 
 mopack 会将所有的配置文件生成至`.proconfig`文件夹 可根据需要自行修改
 
 参数：
 
-`-c`: 指定配置文件路径
+`-y`: 是否使用yarn代替npm,默认使用不使用
 
 
 #### 配置文件
@@ -41,8 +40,9 @@ module.exports = {
     API:'123.123.123.123'
   },//编译时注入全局变量  默认值包含NODE_ENV
   sourceMap: false,//构建时是否生成 sourcemap文件
-  cleanDist: false,//构建时是否清除构建目标文件夹的所有文件，默认情况下 每次构建都会自动生成以当前版本号命名的文件夹
+  cleanDist: true,//构建时是否清除构建目标文件夹的所有文件，当设为false时， 每次构建都会自动生成以当前版本号命名的文件夹
   publicPath: '',//资源文件夹，一般无需设置，如果使用CDN服务 可设置此选项
+  css:'css',//使用的样式处理语言，支持css,less,sass,styled-components
   yarn: true,// 包管理器  默认使用yarn  设为false时 将使用npm
 };
 
@@ -54,7 +54,7 @@ module.exports = {
 
 **global**
 
-指定webpack 编译时注入的全局变量，默认全局变量为`NODE_ENV`,值`development`表示开发环境,`production`表示生产环境
+指定webpack 编译时注入的全局变量，默认全局变量为`APP_ENV`,值`development`表示开发环境,`production`表示生产环境
 
 **port**
 
