@@ -1,8 +1,9 @@
 module.exports = {
-  pages: ['index', 'about'],
+  pages: ['index'],
   port: 1234,
   sourceMap: false,
-  cleanDist: false,
+  cleanDist: true,
   publicPath: '',
-  yarn: true,
+  yarn: false,
+  css:"css"
 };

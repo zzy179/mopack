@@ -28,6 +28,7 @@ const appDefaultCfg = path.join(__dirname, "./app.config.default.js");
 const webpackdevCfg = path.join(__dirname, "./webpack.config.dev.js");
 const webpackproCfg = path.join(__dirname, "./webpack.config.prod.js");
 const webpackutil = path.join(__dirname, "./webpack.util.js");
+const cssLanguages = ['css','sass','less','styled'];
 const scripts = {
     dev:
         "webpack-dev-server --mode development --config ./.proconfig/webpack.config.dev.js --hot --color --progress",
@@ -41,5 +42,5 @@ module.exports = {
     webpackdevCfg,
     webpackproCfg,
     webpackutil,
-    scripts
+    scripts,cssLanguages
 };

@@ -1,4 +1,4 @@
-process.env.NODE_ENV = "development";
+// process.env.NODE_ENV = "development";
 const path = require("path");
 const fs = require("fs");
 const webpack = require("webpack");
@@ -9,12 +9,12 @@ const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
 const BundleAnalyzerPlugin = require("webpack-bundle-analyzer")
   .BundleAnalyzerPlugin;
 const CleanWebpackPlugin = require("clean-webpack-plugin");
-const autoprefixer = require("autoprefixer");
+
 // const pxtorem = require("postcss-pxtorem");
 const util = require("./webpack.util");
 const pkg = require("../package.json");
 
-const app = JSON.parse(fs.readFileSync(path.join(__dirname, "/.app.conf")));
+const app = JSON.parse(fs.readFileSync(path.join(__dirname, "/app.conf")));
 
 const thisVersion = semver.inc(pkg.appVersion, "minor");
 pkg.appVersion = thisVersion;
@@ -33,12 +33,14 @@ Plugins.push(
   })
 );
 Plugins.push(new BundleAnalyzerPlugin());
-if(app.cleanDist){
-  Plugins.push(new CleanWebpackPlugin(['build']))
+if (app.cleanDist) {
+  Plugins.push(new CleanWebpackPlugin([path.join(__dirname,'../build')],{
+      allowExternal:true
+  }));
 }
 outputDist = app.cleanDist ? "../build" : `../build/${thisVersion}`;
 fs.writeFileSync(
-  path.join(__dirname, "/.app.conf"),
+  path.join(__dirname, "/app.conf"),
   JSON.stringify(app, null, 4)
 );
 fs.writeFileSync("./package.json", JSON.stringify(pkg, null, 4));
@@ -56,41 +58,8 @@ module.exports = {
       {
         oneOf: [
           {
-            test: /\.(css)$/,
-            use: [
-              MinicssExtractPluin.loader,
-              {
-                loader: "css-loader",
-                options: {
-                  importLoaders: 1
-                }
-              },
-              {
-                loader: "postcss-loader",
-                options: {
-                  ident: "postcss",
-                  plugins: () => [
-                    autoprefixer({
-                      browsers: [
-                        ">1%",
-                        "last 4 versions",
-                        "Firefox ESR",
-                        "not ie < 9" // React doesn't support IE8 anyway
-                      ]
-                    }),
-                    // pxtorem({
-                    //   rootValue: 10,
-                    //   unitPrecision: 5,
-                    //   propList: ["*"],
-                    //   selectorBlackList: [],
-                    //   replace: true,
-                    //   mediaQuery: false,
-                    //   minPixelValue: 12
-                    // })
-                  ]
-                }
-              }
-            ]
+            test: /\.(css|sass|scss|less)$/,
+            use: util.createCSSRule(app.css,'production',MinicssExtractPluin)
           },
           {
             test: /\.(js|jsx)$/,
@@ -102,7 +71,8 @@ module.exports = {
                 options: {
                   cacheDirectory: true,
                   babelrc: false,
-                  presets: ["@babel/env", "@babel/react"]
+                  presets: ["@babel/env", "@babel/react"],
+                  plugins: app.css === "styled" ? ["styled-components"] : []
                 }
               }
             ]

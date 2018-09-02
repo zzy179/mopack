@@ -1,28 +1,23 @@
-function createHtmlTemplate(title) {
-  return `
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>${title}</title>
-  </head>
-  <body>
-
-    <div id="react-root">
-       <h1>Hello World!</h1>
-    </div>
-
-  </body>
-</html>
-
-  `;
+const fs = require("fs");
+const path = require("path");
+function createHtmlTemplate() {
+  return fs.readFileSync(path.join(__dirname, "/template/template.html"));
 }
 
-function createCommentTemplate(type) {
-  return `/* this is the ${type} entry point for this page */
-${type === 'javascript' ? "import './main.css'" : ''}
-  `;
+function createCodeTemplate(type) {
+  return type === "javascript"
+    ? fs.readFileSync(path.join(__dirname, "/template/main.js"))
+    : fs.readFileSync(path.join(__dirname, "/template/main.css"));
 }
-
-module.exports = { createHtmlTemplate, createCommentTemplate };
+function createMediaTemplate() {
+  return fs.readFileSync(path.join(__dirname, "/template/image.jpg"));
+}
+function copyFile(file) {
+  return fs.readFileSync(path.join(__dirname, `/template/${file}`));
+}
+module.exports = {
+  createHtmlTemplate,
+  createCodeTemplate,
+  createMediaTemplate,
+  copyFile
+};
