@@ -44,7 +44,14 @@ module.exports = {
                   cacheDirectory: true,
                   babelrc: false,
                   presets: ["@babel/env", "@babel/react"],
-                  plugins: app.css === "styled" ? ["styled-components"] : []
+                  plugins: app.css === "styled"
+                    ? [
+                      "styled-components",
+                      "@babel/plugin-syntax-dynamic-import"
+                    ]
+                    : [
+                      "@babel/plugin-syntax-dynamic-import"
+                    ]
                 }
               }
             ]

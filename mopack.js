@@ -1,4 +1,5 @@
 #!/usr/bin / env node
+
 /* eslint no-console:0 ,prefer-promise-reject-errors :0 ,no-dynamic-require:0,global-require:0 */
 const commander = require("commander");
 const chalk = require("chalk");
@@ -38,7 +39,7 @@ const program = new commander.Command("mopack")
     projectName = name;
   });
 
-program.option("-c, --css <engine>", "指定css语言");
+program.option("-c, --css [engine]", "指定css语言");
 program.option("-y, --yarn", "是否使用yarn作为包管理器");
 program.on("--help", () => {
   console.log(`您必须指定 ${chalk.green("<project-directory>")}`);
@@ -108,8 +109,9 @@ function createApp(pname) {
     useYarn = true;
   }
   //设置css处理器语言
+  var css = 'css';
   if (program.css) {
-    const css = program.css;
+    css = program.css;
     if (cssLanguages.includes(css)) {
       defaultCfgObj.css = css;
       switch (css) {
@@ -146,7 +148,7 @@ function createApp(pname) {
     }
   }
   //生成页面模板
-  createPages(defaultCfgObj.pages, pages,commons);
+  createPages(defaultCfgObj.pages, pages, commons, css);
   // 写入npm scripts
   writeScripts(packageJson);
   //生成配置文件
@@ -164,7 +166,7 @@ function createApp(pname) {
   process.chdir(root);
   console.log(`${chalk.green("开始安装所有依赖")}`);
   console.log(
-    `${chalk.green(begoo("正在安装依赖，这可能需要一会儿,请不要捉急！"))}`
+    `${chalk.green(begoo("正在安装依赖包，这可能需要一会儿！"))}`
   );
 
   installDepend()
@@ -173,7 +175,7 @@ function createApp(pname) {
         .then(() => {
           console.log();
           console.log(`${chalk.green("依赖安装完成！")}`);
-          console.log(`${chalk.green("您可以操作起来了!")}`);
+          console.log(`${chalk.green("您可以愉快的开始了！!")}`);
           console.log(
             `${chalk.green(`使用方法: 运行 "cd ${projectName}" 进入项目目录`)}`
           );
@@ -194,7 +196,8 @@ function createApp(pname) {
       console.log("安装失败", err);
     });
 }
-function createPages(pages, pagespath,commons) {
+
+function createPages(pages, pagespath, commons, css) {
   pages.forEach(page => {
     const pagePath = path.join(pagespath, `/${page}`);
     fs.ensureDirSync(pagePath);
@@ -206,10 +209,15 @@ function createPages(pages, pagespath,commons) {
     );
     nfs.writeFileSync(`${commons}/config.js`, copyFile('config.js'));
     nfs.writeFileSync(`${pagePath}/media/image.jpg`, createMediaTemplate());
-    nfs.writeFileSync(`${pagePath}/main.css`, createCodeTemplate("style"));
+    if (css !== 'styled') {
+      nfs.writeFileSync(`${pagePath}/main.${css}`, createCodeTemplate("style"));
+    } else {
+      nfs.writeFileSync(`${pagePath}/main.css`, createCodeTemplate("style"));
+    }
     nfs.writeFileSync(`${pagePath}/${page}.html`, createHtmlTemplate(page));
   });
 }
+
 function installDepend() {
   allDependencies.push(...proModules);
 
@@ -217,7 +225,9 @@ function installDepend() {
     const command = useYarn ? "yarn" : "npm";
     // 安装dependencies
     const args1 = [useYarn ? "add" : "install"].concat(allDependencies);
-    const child1 = spawn(command, args1, { stdio: "inherit" });
+    const child1 = spawn(command, args1, {
+      stdio: "inherit"
+    });
 
     child1.on("close", code1 => {
       if (code1 !== 0) {
@@ -237,10 +247,12 @@ function installDevDepend() {
   return new Promise((resolve, reject) => {
     const command = useYarn ? "yarn" : "npm";
     // 安装devDependencies
-    const args2 = [useYarn ? "add" : "install",useYarn? "--dev":"--save-dev"].concat(
+    const args2 = [useYarn ? "add" : "install", useYarn ? "--dev" : "--save-dev"].concat(
       allDevDependencies
     );
-    const child2 = spawn(command, args2, { stdio: "inherit" });
+    const child2 = spawn(command, args2, {
+      stdio: "inherit"
+    });
     child2.on("close", code2 => {
       if (code2 !== 0) {
         reject({
