@@ -15,7 +15,6 @@ const devModules = [
     "webpack-dev-server",
     "autoprefixer",
     "postcss-loader",
-    "postcss-pxtorem",
     "@babel/preset-env",
     "@babel/preset-react",
     "uglifyjs-webpack-plugin",
@@ -23,7 +22,7 @@ const devModules = [
     "semver",
     "clean-webpack-plugin"
 ];
-const proModules = ["react", "react-dom", "@babel/polyfill"];
+const proModules = ["react", "react-dom", "@babel/polyfill", "@babel/plugin-syntax-dynamic-import"];
 const appDefaultCfg = path.join(__dirname, "./app.config.default.js");
 const webpackdevCfg = path.join(__dirname, "./webpack.config.dev.js");
 const webpackproCfg = path.join(__dirname, "./webpack.config.prod.js");
