@@ -1,4 +1,6 @@
+#!/usr/bin / env node
 /* eslint no-console:0 ,prefer-promise-reject-errors :0 ,no-dynamic-require:0,global-require:0 */
+
 const commander = require("commander");
 const chalk = require("chalk");
 const cowsay = require("cowsay");
@@ -24,6 +26,7 @@ const devDeps = [
 	"html-webpack-plugin",
 	"style-loader",
 	"url-loader",
+	"fs-extra",
 	"webpack",
 	"webpack-cli",
 	"webpack-dev-server",
@@ -140,7 +143,6 @@ function createApp() {
 	createPage("index");
 	createPkg();
 	createConfigs();
-	console.log(appPathRoot);
 
 	process.chdir(appPathRoot);
 	installDep().then(() => {

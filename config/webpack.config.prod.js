@@ -43,6 +43,14 @@ module.exports = {
 								},
 							},
 							{
+								loader: "postcss-loader",
+								options: {
+									config: {
+										path: path.resolve(__dirname, "./.postcssrc.js"),
+									},
+								},
+							},
+							{
 								// 将 Sass 编译成 CSS
 								loader: "sass-loader",
 								options: {
