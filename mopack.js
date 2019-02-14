@@ -8,28 +8,36 @@ const spawn = require("cross-spawn");
 const begoo = require("begoo");
 const inquirer = require("inquirer");
 const templateUtil = require("./template/template.util");
+
+//默认环境变量
 let app = {
 	env: {
-		dev: {
+		development: {
 			APP_ENV: "DEV",
 		},
-		prod: {
+		production: {
 			APP_ENV: "PROD",
 		},
 		test: {
 			APP_ENV: "TEST",
 		},
 	},
-};
-const scripts = {
-	dev:
-		"webpack-dev-server --mode development --config ./.mopack/webpack.config.js --hot --color --env dev",
-	"build:test":
-		"webpack --mode production --config ./.mopack/webpack.config.js --env test",
-	"build:prod":
-		"webpack --mode production --config ./.mopack/webpack.config.js --env prod",
+	pages: [
+		{ page: "index", entry: "./src/app.js", template: "./src/index.html" },
+	],
 };
 
+//默认脚本命令
+const scripts = {
+	dev:
+		"cross-env NODE_ENV=development webpack-dev-server  --config ./webpack.config.js --hot --color ",
+	"build:test":
+		"cross-env NODE_ENV=test webpack  --config ./webpack.config.js ",
+	"build:prod":
+		"cross-env NODE_ENV=production webpack  --config ./webpack.config.js",
+};
+
+//默认依赖
 const deps = [
 	"@babel/polyfill",
 	"@babel/plugin-proposal-class-properties",
@@ -54,58 +62,72 @@ const deps = [
 	"clean-webpack-plugin",
 	"optimize-css-assets-webpack-plugin",
 	"postcss-preset-env",
-	"eslint-config-react-app",
 	"eslint",
 	"eslint-loader",
+	"terser-webpack-plugin",
+	"cssnano",
+	"cross-env",
+	"babel-plugin-transform-react-remove-prop-types",
+	"babel-eslint",
 ];
+
+const eslintrc = {};
+
+const eslintrcJs = {
+	extends: "eslint:recommended",
+	env: {
+		browser: true,
+		commonjs: true,
+		node: true,
+		es6: true,
+	},
+	parserOptions: {
+		ecmaVersion: 2018,
+		sourceType: "module",
+	},
+};
+
+const eslintrcReact = {
+	root: true,
+
+	parser: "babel-eslint",
+	plugins: ["import", "react"],
+	extends: ["eslint:recommended", "plugin:react/recommended"],
+	env: {
+		browser: true,
+		commonjs: true,
+		es6: true,
+		node: true,
+	},
+	parserOptions: {
+		ecmaVersion: 2018,
+		sourceType: "module",
+		ecmaFeatures: {
+			jsx: true,
+		},
+	},
+	settings: {
+		react: {
+			version: "detect",
+		},
+	},
+};
+
+//默认babel 配置
+const babelrc = {};
 const babelPlugins = [];
 const babelPresets = ["@babel/preset-env"];
-// // 创建commander实例
-// const program = new commander.Command("mopack")
-// 	.arguments("<project-directory>")
-// 	.usage(`${chalk.green("<project-directory>")} [options]`)
-// 	.action(name => {
-// 		projectName = name;
-// 	});
-
-// // program.option("-c, --css [engine]", "指定css语言");
-// // program.option("-y, --yarn", "是否使用yarn作为包管理器"); //默认为false
-// // program.option("-r, --react", "是否是React应用"); //默认为true
-// program.on("--help", () => {
-// 	console.log(`您必须指定 ${chalk.green("<project-directory>")}`);
-// 	console.log(
-// 		`${chalk.yellow(
-// 			cowsay.say({
-// 				text: "HAPPY CODING!",
-// 			}),
-// 		)}`,
-// 	);
-// 	console.log();
-// });
-// program.parse(process.argv);
-
-// // 验证是否指定了项目名
-// if (typeof projectName === "undefined") {
-// 	console.log(`${chalk.red("命令错误，缺少项目名")}`);
-// 	console.log(
-// 		`${chalk.red("如果你想创建一个项目, < project - directory > 是必需的")}`,
-// 	);
-// 	console.log("示例:");
-// 	console.log(`mopack ${chalk.green("MyProject")}`);
-// 	console.log();
-
-// 	console.log();
-// 	process.exit(1);
-// }
 
 const prompts = [];
+
 let appPreConf = {
 	appName: "myapp",
 	csslang: "css",
 	useYarn: false,
 	isReactApp: false,
-	isSPA: true,
 };
+
+//选项设置
 prompts.push(
 	{
 		type: "input",
@@ -141,19 +163,17 @@ prompts.push(
 	},
 	{
 		type: "confirm",
+		message: "is React App?",
 		name: "isReactApp",
-		message: "is React App",
-	},
-	{
-		type: "confirm",
-		name: "isSPA",
-		message: "only one page?",
+		default: false,
 	},
 );
 inquirer.prompt(prompts).then(function(answer) {
 	appPreConf = Object.assign(appPreConf, answer);
 	app = Object.assign(app, appPreConf);
+
 	const { appRootPath, srcPath, configPath, imagesPath } = resolvePath(app);
+	// 得到最终的配置
 	app = Object.assign({}, app, {
 		configPath: configPath,
 		appRootPath: appRootPath,
@@ -162,7 +182,7 @@ inquirer.prompt(prompts).then(function(answer) {
 	if (app.csslang && app.csslang === "sass") {
 		console.log(
 			`${chalk.red(
-				"您使用了sass,这需要您单独安装node-sass,建议您全局安装,详情可查看 https://github.com/sass/node-sass",
+				"您使用了sass,需要安装node-sass,详情可查看 https://github.com/sass/node-sass",
 			)}`,
 		);
 	}
@@ -171,16 +191,21 @@ inquirer.prompt(prompts).then(function(answer) {
 	createPage(appPreConf.isSPA, srcPath);
 	createPkg(appPreConf, appRootPath);
 	createBabelrc(appPreConf, configPath);
-	createConfigs(appRootPath);
+	createConfigs(configPath);
 	createApp(app);
 });
 
-function resolvePath(appPreConf) {
-	const { appName } = appPreConf;
+function resolvePath(app) {
+	const { appName } = app;
 	const appRootPath = path.resolve(appName);
 	// 解析出项目文件路径
 	const srcPath = path.join(appRootPath, "/src");
-	const configPath = path.join(appRootPath, "/.mopack");
+	let configPath = path.join(appRootPath);
+
+	// //如果是松垮模式 所有的配置文件将直接生成在项目根目录
+	// if (app.loose) {
+	// 	configPath = path.join(appRootPath);
+	// }
 	// const pagesPath = path.join(srcPath, "/pages");
 	const imagesPath = path.join(srcPath, "/assets");
 	return {
@@ -198,27 +223,13 @@ function createFiles(appName, appRootPath, srcPath, configPath, imagesPath) {
 	//生成项目目录文件
 	myfs.ensureDirSync(appRootPath);
 	myfs.ensureDirSync(configPath);
-	// myfs.ensureDirSync(pagesPath);
 	myfs.ensureDirSync(imagesPath);
 }
 
 //生成模板页面
 function createPage(isSPA, srcPath) {
 	//是否为SPA的唯一区别是 是否将page 放在pages 下
-	const pagePath = isSPA
-		? srcPath
-		: path.join(path.join(srcPath, "/pages"), `/${"index"}`);
-	isSPA
-		? Object.assign(app, {
-				pages: {
-					index: "/src/app.js",
-				},
-		  })
-		: Object.assign(app, {
-				pages: {
-					index: "/src/pages/index/app.js",
-				},
-		  });
+	const pagePath = srcPath;
 	myfs.ensureDirSync(pagePath);
 	myfs.writeFileSync(`${pagePath}/app.js`, templateUtil.readTemplateFile("js"));
 	myfs.writeFileSync(
@@ -241,20 +252,48 @@ function createBabelrc(appPreConf, configPath) {
 	if (appPreConf.csslang === "styled") {
 		babelPlugins.push("babel-plugin-styled-components");
 	}
-	//安装React需要的babel插件
+
+	//react
 	if (appPreConf.isReactApp) {
 		babelPresets.push("@babel/preset-react");
+		deps.push(
+			"@babel/preset-react",
+			"babel-plugin-transform-react-remove-prop-types",
+			"react",
+			"react-dom",
+		);
+		babelrc["env"] = {
+			production: {
+				plugins: [
+					"transform-react-remove-prop-types",
+					{
+						mode: "wrap",
+						ignoreFilenames: ["node_modules"],
+					},
+				],
+			},
+		};
+
+		Object.assign(eslintrc, eslintrcReact);
+	} else {
+		Object.assign(eslintrc, eslintrcJs);
 	}
+
 	myfs.writeFileSync(
 		path.join(configPath, ".babelrc"),
 		JSON.stringify(
-			{
+			Object.assign(babelrc, {
 				presets: babelPresets,
 				plugins: babelPlugins,
-			},
+			}),
 			null,
 			4,
 		),
+	);
+
+	myfs.writeFileSync(
+		path.join(configPath, ".eslintrc"),
+		JSON.stringify(eslintrc, null, 4),
 	);
 }
 //生成package.json文件
@@ -271,6 +310,8 @@ function createPkg(appPreConf, appRootPath) {
 	const pkj = {
 		appName: appPreConf.appName,
 		scripts: scripts,
+		version: "0.1.0",
+		private: true,
 	};
 	myfs.writeFileSync(
 		path.join(appRootPath, "package.json"),
@@ -279,8 +320,6 @@ function createPkg(appPreConf, appRootPath) {
 }
 
 function createApp({ configPath, appRootPath, appName, useYarn } = {}) {
-	console.log(configPath, appRootPath);
-
 	myfs.writeFileSync(
 		path.join(configPath, "app.json"),
 		JSON.stringify(app, null, 4),
@@ -302,11 +341,8 @@ function createApp({ configPath, appRootPath, appName, useYarn } = {}) {
 		console.log(`${chalk.green(begoo("Happy Coding!", { avatar: "monkey" }))}`);
 	});
 }
-function createConfigs(appRootPath) {
-	myfs.copySync(
-		path.resolve(__dirname, "./config"),
-		path.resolve(appRootPath, "./.mopack"),
-	);
+function createConfigs(configPath) {
+	myfs.copySync(path.resolve(__dirname, "./config"), path.resolve(configPath));
 }
 
 function installDep(useYarn) {

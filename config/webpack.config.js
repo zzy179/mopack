@@ -2,8 +2,9 @@ const path = require("path");
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MinicssExtractPluin = require("mini-css-extract-plugin");
-const InlineChunkHtmlPlugin = require("react-dev-utils/InlineChunkHtmlPlugin");
+// const InlineChunkHtmlPlugin = require("react-dev-utils/InlineChunkHtmlPlugin");
 const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
 const CleanWebpackPlugin = require("clean-webpack-plugin");
 const BundleAnalyzerPlugin = require("webpack-bundle-analyzer")
 	.BundleAnalyzerPlugin;
@@ -11,13 +12,16 @@ const app = require("./app.json");
 
 const cssRegex = /\.css$/;
 const sassRegex = /\.(css|scss|sass)$/;
-module.exports = env => {
-	const isProd = env === "prod" || env === "test";
-	const isDev = env === "dev";
+module.exports = () => {
+	const env = process.env.NODE_ENV || "production";
+	const isProd = env === "production";
+	const isDev = env === "development";
+	const isTest = env === "test";
+
 	const getCssloaders = function() {
 		const loaders = [
 			isDev && { loader: require.resolve("style-loader") },
-			isProd && {
+			(isProd || isTest) && {
 				loader: MinicssExtractPluin.loader,
 				options: { publicPath: "../" }, //这里配置生成的css 文件里的静态资源的路径，这里是因为 最终生成在styles 文件下
 			},
@@ -26,7 +30,7 @@ module.exports = env => {
 				loader: require.resolve("css-loader"),
 				options: {
 					importLoaders: 1,
-					sourceMap: isDev,
+					sourceMap: false,
 				},
 			},
 			{
@@ -42,14 +46,14 @@ module.exports = env => {
 							stage: 3,
 						}),
 					],
-					sourceMap: isDev,
+					sourceMap: false,
 				},
 			},
 			app.csslang === "sass" && {
 				// 将 Sass 编译成 CSS
 				loader: "sass-loader",
 				options: {
-					sourceMap: isDev,
+					sourceMap: false,
 				},
 			},
 		].filter(Boolean);
@@ -69,19 +73,15 @@ module.exports = env => {
 	};
 
 	const getHtmlPlugins = function() {
-		return Object.keys(app.pages).map(page => {
+		return app.pages.map(page => {
 			return new HtmlWebpackPlugin(
 				Object.assign(
 					{},
 					{
 						inject: true,
-						filename: `${page}.html`,
-						template: path.join(
-							__dirname,
-							"../",
-							path.parse(app.pages[page]).dir + "/index.html",
-						),
-						chunks: [page],
+						filename: `${page.page}.html`,
+						template: page.template,
+						chunks: ["runtime", "vendor", "commons", page.page],
 					},
 					isProd
 						? {
@@ -105,42 +105,38 @@ module.exports = env => {
 	};
 
 	const getEntrys = function() {
-		const entry = {};
-		Object.keys(app.pages).forEach(page => {
-			return (entry[page] = path.join(
-				__dirname,
-				"../",
-				path.parse(app.pages[page]).dir + "/app.js",
-			));
-		});
-		return entry;
+		return app.pages.reduce((a, b) => {
+			a[b.page] = b.entry;
+			return a;
+		}, {});
 	};
 
 	return {
-		//模式 三种模式：development开发模式 production 生产模式 none ref:https://webpack.docschina.org/concepts/mode/
-		//默认有三种环境 prod  生产环境 dev  开发环境  test  测试环境
+		//ref:https://webpack.docschina.org/concepts/mode/
+		//默认有三种环境 production  生产环境 development  开发环境  test  测试环境
 		mode: isDev ? "development" : "production",
 		//入口文件，如果是多页 添加对应的chunkName 和入口文件
 		entry: getEntrys(),
 		output: {
 			//代码生成到那个文件夹，如果是开发模式，代码在 内存里没有真实文件生成
-			path: isProd ? path.resolve(__dirname, "../build") : undefined,
+			path: !isDev ? path.resolve(__dirname, "./build") : undefined,
 			//入口文件对应的最终生成的文件的名称
 			//开发环境无需hash 值
 			//如果是多页  即使开发环境也需要name 去区分不同的chunk 否则 后面的会覆盖前面的
-			filename: isProd
+			filename: !isDev
 				? "scripts/[name].[chunkhash:8].js"
 				: "js/[name].bundle.js",
-			chunkFilename: isProd
+			chunkFilename: !isDev
 				? "scripts/[name].[chunkhash:8].js"
 				: "js/[name].bundle.js",
 			publicPath: "",
 		},
+		// 测试环境打包对应的sourcemap  便于定位错误
 		devtool: isDev
 			? "cheap-module-eval-source-map"
-			: app.sourceMap
-			? "source-map"
-			: false,
+			: isTest
+				? "source-map"
+				: false,
 		//配置路径别称，这里用@代表 src 目录
 		//对应的在js 中使用时直接当做src 即可 在 sass 内部使用时  需要使用 ~@
 		//如果需要增加别的别称 参考如下即可
@@ -148,14 +144,14 @@ module.exports = env => {
 			{},
 			{
 				alias: {
-					"@": path.resolve(__dirname, "../src"),
+					"@": path.resolve(__dirname, "./src"),
 				},
 			},
 		),
 		module: {
 			//加载各类资源的规则
 			rules: [
-				app.lint && {
+				{
 					test: /\.(js|mjs|jsx)$/,
 					enforce: "pre",
 					use: [
@@ -163,15 +159,11 @@ module.exports = env => {
 							options: {
 								formatter: require.resolve("react-dev-utils/eslintFormatter"),
 								eslintPath: require.resolve("eslint"),
-								quiet: true,
-								emitWarning: isDev,
-								failOnError: isProd,
-								configFile: path.join(__dirname, ".eslintrc"),
 							},
 							loader: require.resolve("eslint-loader"),
 						},
 					],
-					include: path.resolve(__dirname, "../src"),
+					include: path.resolve(__dirname, "./src"),
 				},
 				{
 					//只使用第一个匹配的规则
@@ -189,7 +181,7 @@ module.exports = env => {
 							//不处理node_modules 中的文件
 							exclude: /node_modules/,
 							//只处理src 下自己的代码文件
-							include: path.resolve(__dirname, "../src"),
+							include: path.resolve(__dirname, "./src"),
 							use: [
 								{
 									loader: require.resolve("babel-loader"),
@@ -236,44 +228,80 @@ module.exports = env => {
 			//doesnt work
 			// isProd && new InlineChunkHtmlPlugin(HtmlWebpackPlugin, [/runtime/]),
 			new webpack.DefinePlugin(getEnvStringifed()),
-			isProd &&
+			// moment.js  会引入体积很大的locale包
+			new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
+
+			!isDev &&
 				new MinicssExtractPluin({
 					// Options similar to the same options in webpackOptions.output
 					// both options are optional
 					filename: "styles/[name].[contenthash:8].css",
-					chunkFilename: "styles/[name].[contenthash:8].chunk.css",
+					chunkFilename: "styles/[name].[contenthash:8].css",
+				}),
+			!isDev &&
+				new OptimizeCSSAssetsPlugin({
+					assetNameRegExp: /\.css$/g,
+					cssProcessor: require("cssnano"),
+					cssProcessorPluginOptions: {
+						preset: ["default", { discardComments: { removeAll: true } }],
+					},
+					canPrint: true,
 				}),
 			//清除打包文件
-			isProd &&
-				new CleanWebpackPlugin([path.join(__dirname, "../build")], {
+			!isDev &&
+				new CleanWebpackPlugin([path.join(__dirname, "./build")], {
 					allowExternal: true,
 				}),
 			//打包性能
-			isProd && new BundleAnalyzerPlugin(),
+			!isDev && new BundleAnalyzerPlugin(),
 		].filter(Boolean),
-		optimization: isProd
+		optimization: !isDev
 			? {
 					minimize: true,
-					minimizer: [new OptimizeCSSAssetsPlugin({})],
-
-					splitChunks: {
-						cacheGroups: {
-							commons: {
-								chunks: "initial",
-								minChunks: 2,
-								maxInitialRequests: 5, // The default limit is too small to showcase the effect
-								minSize: 0, // This is example is too small to create commons chunks
+					minimizer: [
+						new TerserPlugin({
+							terserOptions: {
+								warnings: false,
+								compress: {
+									comparisons: false,
+								},
+								parse: {},
+								mangle: true,
+								output: {
+									comments: false,
+									ascii_only: true,
+								},
 							},
+							parallel: true,
+							cache: true,
+							sourceMap: true,
+						}),
+					],
+					nodeEnv: "production",
+					sideEffects: true,
+					concatenateModules: true,
+					splitChunks: {
+						chunks: "all",
+						minSize: 30000,
+						minChunks: 1,
+						maxAsyncRequests: 5,
+						maxInitialRequests: 3,
+						name: true,
+						cacheGroups: {
 							vendor: {
-								test: /node_modules/,
-								chunks: "initial",
+								test: /[\\/]node_modules[\\/]/,
+								chunks: "all",
 								name: "vendor",
-								priority: 10,
+							},
+							commons: {
+								chunks: "all",
+								minChunks: 2,
+								reuseExistingChunk: true,
 								enforce: true,
+								name: "commons",
 							},
 						},
 					},
-					//提取运行时
 					runtimeChunk: {
 						name: "runtime",
 					},

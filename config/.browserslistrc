@@ -1,5 +1,5 @@
 # Browsers that we support
 
-not ie <= 8
 > 1%
+not ie <= 8
 not dead
